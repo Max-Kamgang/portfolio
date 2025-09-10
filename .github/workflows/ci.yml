@@ -32,7 +32,7 @@ jobs:
      
       - name: Push Image
         run: |
-            docker login -u maxkamgang -p Bienvo$203
+            docker login -u maxkamgang -p ${ {secrets.PASSWORD} }
             docker push maxkamgang/portfolio
 
             
