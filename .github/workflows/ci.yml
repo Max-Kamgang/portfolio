@@ -52,10 +52,7 @@ jobs:
          script: |
            docker rm -f resume
            docker run -d --name resume -p 8080:5001 ${{secrets.USERNAME}}/portfolio:${{github.run_number}}
-           whoami
-           docker pull ${{secrets.USERNAME}}/portfolio:latest
-           docker stop portfolio || true
-           docker rm portfolio || true
-           docker run -d -p 80:80 --name portfolio 
+           ssh -i ${{secrets.KEY}} ${{secrets.USERNAME_SSH}}@${{secrets.HOST}} 
+           
 
        
