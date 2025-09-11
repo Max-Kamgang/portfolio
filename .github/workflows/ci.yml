@@ -36,6 +36,26 @@ jobs:
             docker login -u ${{secrets.USERNAME}} -p ${{secrets.PASSWORD}}
             docker push ${{secrets.USERNAME}}/portfolio:${{github.run_number}}
             docker push ${{secrets.USERNAME}}/portfolio
-            
+      
 
-            
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+     - name: SSH to the server
+       uses: appleboy/ssh-action@v1
+       with:
+         host:     ${{secrets.HOST}}
+         username: ${{secrets.USERNAME_SSH}}
+         key:      ${{secrets.KEY}}
+         #port:     ${{secrets.PORT}}
+         script: |
+           docker rm -f resume
+           docker run -d --name resume -p 8080:5001 ${{secrets.USERNAME}}/portfolio:${{github.run_number}}
+           whoami
+           docker pull ${{secrets.USERNAME}}/portfolio:latest
+           docker stop portfolio || true
+           docker rm portfolio || true
+           docker run -d -p 80:80 --name portfolio 
+
+       
