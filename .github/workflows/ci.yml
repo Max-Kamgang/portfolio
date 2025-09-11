@@ -27,12 +27,15 @@ jobs:
 
       
       - name: Build Image
-        run:  docker build -t maxkamgang/portfolio . 
-
+        run: |   
+          docker build -t ${{secrets.USERNAME}}/portfolio:${{github.run_number}} . 
+          docker build -t ${{secrets.USERNAME}}/portfolio .
      
       - name: Push Image
         run: |
-            docker login -u maxkamgang -p ${{secrets.PASSWORD}}
-            docker push maxkamgang/portfolio
+            docker login -u ${{secrets.USERNAME}} -p ${{secrets.PASSWORD}}
+            docker push ${{secrets.USERNAME}}/portfolio:${{github.run_number}}
+            docker push ${{secrets.USERNAME}}/portfolio
+            
 
             
