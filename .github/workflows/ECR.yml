@@ -61,7 +61,6 @@ jobs:
       - name: SSH to the server
         uses: appleboy/ssh-action@v1
         with:
-            
           host:     ${{secrets.HOST}}
           username: ${{secrets.USERNAME_SSH}}
           key:      ${{secrets.KEY}}
