@@ -42,7 +42,7 @@ jobs:
           IMAGE_TAG: ${{ github.run_number }}
         run: | 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . 
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY .
       
       # The "Push Image" step is updated to push to ECR
       - name: Push Image
@@ -52,7 +52,7 @@ jobs:
           IMAGE_TAG: ${{ github.run_number }}
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY
       
 
   deploy:
@@ -71,4 +71,4 @@ jobs:
             docker pull your_ecr_uri/your_ecr_repository_name:${{github.run_number}}
             
             docker rm -f resume
-            docker run -d --name resume -p 8080:5001 your_ecr_uri/your_ecr_repository_name:${{github.run_number}}
+            docker run -d --name resume -p 8080:5001 your_ecr_uri/site/utc-app:${{github.run_number}}
