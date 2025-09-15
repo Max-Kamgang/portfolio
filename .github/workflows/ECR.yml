@@ -71,4 +71,4 @@ jobs:
             docker pull your_ecr_uri/your_ecr_repository_name:${{github.run_number}}
             
             docker rm -f resume
-            docker run -d --name resume -p 8080:5001 your_ecr_uri/site/utc-app:${{github.run_number}}
+            docker run -d --name resume -p 8080:5001 your_ecr_uri/your_ecr_repository_name:${{github.run_number}}
