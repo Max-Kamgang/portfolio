@@ -61,6 +61,7 @@ jobs:
       - name: SSH to the server
         uses: appleboy/ssh-action@v1
         with:
+            
           host:     ${{secrets.HOST}}
           username: ${{secrets.USERNAME_SSH}}
           key:      ${{secrets.KEY}}
@@ -71,5 +72,5 @@ jobs:
               docker pull 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
                 docker rm -f resume
                 docker run -d --name resume -p 8080:5001 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
-                
+
            
