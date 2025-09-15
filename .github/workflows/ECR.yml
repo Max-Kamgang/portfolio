@@ -66,10 +66,12 @@ jobs:
           key:      ${{secrets.KEY}}
           #port:     ${{secrets.PORT}}
           script: |
-            # Pull the image from ECR before running it
-              aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 639794896634.dkr.ecr.us-east-1.amazonaws.com
-              docker pull 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
-                docker rm -f resume
-                docker run -d --name resume -p 8080:5001 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
+            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            export AWS_REGION=${{ secrets.AWS_REGION }}
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 639794896634.dkr.ecr.us-east-1.amazonaws.com
+            docker pull 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
+            docker rm -f resume
+            docker run -d --name resume -p 8080:5001 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
 
            
