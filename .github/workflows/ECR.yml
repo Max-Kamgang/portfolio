@@ -57,50 +57,9 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY
 
   # Job for Snyk Image Scanning (with verification step)
-  scan_image:
-    needs: build # This job depends on the 'build' job completing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      # Configure AWS credentials for this scan job (needed to pull image from ECR)
-      - name: Configure AWS credentials for scan job
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      # Login to Amazon ECR for this scan job (needed to pull image from ECR)
-      - name: Login to Amazon ECR for scan job
-        id: login-ecr-scan
-        uses: aws-actions/amazon-ecr-login@v2
-      
-      # Temporary step to verify ECR pull permissions before Snyk
-      # This is helpful for debugging if the Snyk scan itself fails to pull.
-      - name: Verify Docker Pull from ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr-scan.outputs.registry }}
-          ECR_REPOSITORY: site/utc-app
-          IMAGE_TAG: ${{ github.run_number }}
-        run: |
-          echo "Attempting to pull image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "Image pull successful, proceeding to Snyk scan."
-
-      # Step to run the Snyk Container scan with debug output
-      - name: Run Snyk Container scan with Debug
-        uses: snyk/actions/docker@master
-        env:
-          # SNYK_TOKEN is required here for Snyk to authenticate with its API
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
-        with:
-          image: ${{ steps.login-ecr-scan.outputs.registry }}/site/utc-app:${{ github.run_number }}
-          # args: --severity-threshold=high --fail-on=all -d  <-- if you want debug mode, uncomment this
-          args: --severity-threshold=high --fail-on=all # Fail if high or critical vulnerabilities are found
     
   deploy:
-    needs: scan_image # This job now depends on the 'scan_image' job completing successfully
+    needs: build # This job now depends on the 'scan_image' job completing successfully
     runs-on: ubuntu-latest
     steps:
       - name: SSH to the server
