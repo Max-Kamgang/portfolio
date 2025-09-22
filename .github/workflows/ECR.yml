@@ -70,7 +70,30 @@ jobs:
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY
+    # New job for Image Scanning
+  scan_image:
+    needs: build # This job depends on the 'build' job completing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
       
+      - name: Run Snyk Container scan
+        uses: snyk/actions/docker@master
+        env:
+          # Snyk API token, stored as a GitHub Secret
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
+        with:
+          image: ${{ steps.login-ecr.outputs.registry }}/site/utc-app:${{ github.run_number }}
+          args: --severity-threshold=high --fail-on=all
+   
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
