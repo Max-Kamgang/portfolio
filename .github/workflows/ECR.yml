@@ -43,7 +43,23 @@ jobs:
         run: | 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY .
-      
+           
+       # New step: Scan Image for vulnerabilities
+      - name: Scan Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: site/utc-app
+          IMAGE_TAG: ${{ github.run_number }}
+        run: |
+          # Install Trivy
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.31.0/trivy_0.31.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.31.0_Linux-64bit.deb
+
+          # Scan the image. Adjust --severity and --exit-code as needed.
+          # For example, --exit-code 1 will fail the build if vulnerabilities are found.
+          trivy image --severity HIGH,CRITICAL --exit-code 1 $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "Image scan complete."
+          
       # The "Push Image" step is updated to push to ECR
       
       - name: Push Image
