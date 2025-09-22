@@ -73,7 +73,7 @@ jobs:
       - name: Run Snyk Container scan
         uses: snyk/actions/docker@master
         env:
-          # Snyk API token, stored as a GitHub Secret
+          # Snyk API token, stored as a GitHub Secret hd
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
         with:
           image: ${{ steps.login-ecr.outputs.registry }}/site/utc-app:${{ github.run_number }}
