@@ -43,12 +43,16 @@ jobs:
         run: | 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG . 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY .
-           
-      
           
-      # The "Push Image" step is updated to push to ECR
       
-      - name: Push Image
+      # The "Push Image" step is updated to push to ECR
+      # This push step is now after the scan_image job.
+      # It could also be moved to a separate job if you want to push only if both build and scan pass.
+      # For now, keeping it here assuming the built image is pushed regardless for the scan_image job to pull.
+      # If you want to push ONLY AFTER successful scan, move this step into a new 'push_image' job that
+      # depends on 'scan_image'. For this current structure, the scan_image job will pull the image that was
+      # built in this 'build' job.
+      - name: Push Image (After Build, Before Scan in sequence)
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: site/utc-app
@@ -56,40 +60,46 @@ jobs:
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY
-    # New job for Image Scanning
+
+  # New job for Image Scanning
   scan_image:
     needs: build # This job depends on the 'build' job completing
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      # IMPORTANT: Configure AWS credentials for this job as well
+      - name: Configure AWS credentials for scan job
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR for scan job
+        id: login-ecr-scan
+        uses: aws-actions/amazon-ecr-login@v2 # This will now pick up credentials from the previous step
       
       - name: Run Snyk Container scan
         uses: snyk/actions/docker@master
         env:
-          # Snyk API token, stored as a GitHub Secret hd
+          # Snyk API token, stored as a GitHub Secret
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
         with:
-          image: ${{ steps.login-ecr.outputs.registry }}/site/utc-app:${{ github.run_number }}
+          # Use the registry output from the 'login-ecr-scan' step in this job
+          image: ${{ steps.login-ecr-scan.outputs.registry }}/site/utc-app:${{ github.run_number }}
           args: --severity-threshold=high --fail-on=all
-   
+    
   deploy:
-    needs: scan_image
+    needs: scan_image # This job now depends on the 'scan_image' job completing
     runs-on: ubuntu-latest
     steps:
       - name: SSH to the server
         uses: appleboy/ssh-action@v1
         with:
-          host:     ${{secrets.HOST}}
+          host:    ${{secrets.HOST}}
           username: ${{secrets.USERNAME_SSH}}
-          key:      ${{secrets.KEY}}
-          #port:     ${{secrets.PORT}}
+          key:     ${{secrets.KEY}}
+          #port:    ${{secrets.PORT}}
           script: |
             export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
             export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -98,5 +108,3 @@ jobs:
             docker pull 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
             docker rm -f resume
             docker run -d --name resume -p 8080:5001 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
-
-           
