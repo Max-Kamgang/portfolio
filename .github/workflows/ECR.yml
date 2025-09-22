@@ -46,13 +46,8 @@ jobs:
           
       
       # The "Push Image" step is updated to push to ECR
-      # This push step is now after the scan_image job.
-      # It could also be moved to a separate job if you want to push only if both build and scan pass.
-      # For now, keeping it here assuming the built image is pushed regardless for the scan_image job to pull.
-      # If you want to push ONLY AFTER successful scan, move this step into a new 'push_image' job that
-      # depends on 'scan_image'. For this current structure, the scan_image job will pull the image that was
-      # built in this 'build' job.
-      - name: Push Image (After Build, Before Scan in sequence)
+      # This push step is placed here for the scan_image job to pull from ECR.
+      - name: Push Image (After Build)
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: site/utc-app
@@ -77,17 +72,25 @@ jobs:
 
       - name: Login to Amazon ECR for scan job
         id: login-ecr-scan
-        uses: aws-actions/amazon-ecr-login@v2 # This will now pick up credentials from the previous step
+        uses: aws-actions/amazon-ecr-login@v2
       
-      - name: Run Snyk Container scan
-        uses: snyk/actions/docker@master
+      # Temporary step to verify ECR pull permissions before Snyk
+      - name: Verify Docker Pull from ECR
         env:
-          # Snyk API token, stored as a GitHub Secret
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
+          ECR_REGISTRY: ${{ steps.login-ecr-scan.outputs.registry }}
+          ECR_REPOSITORY: site/utc-app
+          IMAGE_TAG: ${{ github.run_number }}
+        run: |
+          echo "Attempting to pull image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "Image pull successful, proceeding to Snyk scan."
+
+      - name: Run Snyk Container scan with Debug
+        uses: snyk/actions/docker@master
+        # --- SNYK_TOKEN ENV BLOCK REMOVED HERE ---
         with:
-          # Use the registry output from the 'login-ecr-scan' step in this job
           image: ${{ steps.login-ecr-scan.outputs.registry }}/site/utc-app:${{ github.run_number }}
-          args: --severity-threshold=high --fail-on=all
+          args: --severity-threshold=high --fail-on=all -d # -d for debug output
     
   deploy:
     needs: scan_image # This job now depends on the 'scan_image' job completing
