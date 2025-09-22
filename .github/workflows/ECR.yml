@@ -46,8 +46,8 @@ jobs:
           
       
       # The "Push Image" step is updated to push to ECR
-      # This push step is placed here for the scan_image job to pull from ECR.
-      - name: Push Image (After Build)
+      # This is crucial as ECR scan happens AFTER push.
+      - name: Push Image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: site/utc-app
@@ -56,44 +56,77 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY
 
-  # New job for Image Scanning
-  scan_image:
-    needs: build # This job depends on the 'build' job completing
+  # New job for AWS ECR Image Scanning
+  ecr_scan:
+    needs: build # This job depends on the 'build' job completing successfully
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      # IMPORTANT: Configure AWS credentials for this job as well
-      - name: Configure AWS credentials for scan job
+      - name: Configure AWS credentials for ECR scan job
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR for scan job
-        id: login-ecr-scan
-        uses: aws-actions/amazon-ecr-login@v2
-      
-      # Temporary step to verify ECR pull permissions before Snyk
-      - name: Verify Docker Pull from ECR
+      - name: Wait for ECR Image Scan to Complete and Check Findings
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr-scan.outputs.registry }}
           ECR_REPOSITORY: site/utc-app
           IMAGE_TAG: ${{ github.run_number }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          echo "Attempting to pull image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "Image pull successful, proceeding to Snyk scan."
+          ATTEMPTS=0
+          MAX_ATTEMPTS=30 # Wait up to 5 minutes (30 * 10 seconds)
+          SCAN_STATUS=""
 
-      - name: Run Snyk Container scan with Debug
-        uses: snyk/actions/docker@master
-        # --- SNYK_TOKEN ENV BLOCK REMOVED HERE ---
-        with:
-          image: ${{ steps.login-ecr-scan.outputs.registry }}/site/utc-app:${{ github.run_number }}
-          args: --severity-threshold=high --fail-on=all -d # -d for debug output
+          echo "Waiting for ECR scan for image $ECR_REPOSITORY:$IMAGE_TAG to complete..."
+
+          while [ "$SCAN_STATUS" != "COMPLETE" ] && [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+            SCAN_STATUS=$(aws ecr describe-image-scans \
+              --repository-name $ECR_REPOSITORY \
+              --image-id imageTag=$IMAGE_TAG \
+              --query 'imageScanStatuses[0].status' \
+              --output text)
+            
+            if [ "$SCAN_STATUS" == "COMPLETE" ]; then
+              echo "ECR scan complete."
+              break
+            elif [ "$SCAN_STATUS" == "FAILED" ]; then
+              echo "ERROR: ECR scan failed!"
+              exit 1
+            else
+              echo "Scan status: $SCAN_STATUS. Waiting 10 seconds..."
+              sleep 10
+              ATTEMPTS=$((ATTEMPTS+1))
+            fi
+          done
+
+          if [ "$SCAN_STATUS" != "COMPLETE" ]; then
+            echo "ERROR: ECR scan did not complete within the allotted time."
+            exit 1
+          fi
+
+          echo "Checking scan findings..."
+          # Get scan findings and filter for HIGH or CRITICAL vulnerabilities
+          FINDINGS=$(aws ecr describe-image-scan-findings \
+            --repository-name $ECR_REPOSITORY \
+            --image-id imageTag=$IMAGE_TAG \
+            --query 'imageScanFindings.findings[?severity==`HIGH` || severity==`CRITICAL`]' \
+            --output json)
+          
+          # Check if any high or critical findings were returned
+          if [ "$(echo "$FINDINGS" | jq 'length')" -gt 0 ]; then
+            echo "--------------------------------------------------------"
+            echo "CRITICAL OR HIGH SEVERITY VULNERABILITIES FOUND IN ECR SCAN:"
+            echo "$FINDINGS" | jq .
+            echo "--------------------------------------------------------"
+            echo "Failing pipeline due to critical/high vulnerabilities."
+            exit 1
+          else
+            echo "No HIGH or CRITICAL vulnerabilities found by ECR scan."
+          fi
     
   deploy:
-    needs: scan_image # This job now depends on the 'scan_image' job completing
+    needs: ecr_scan # This job now depends on the 'ecr_scan' job completing successfully
     runs-on: ubuntu-latest
     steps:
       - name: SSH to the server
