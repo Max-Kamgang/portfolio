@@ -8,7 +8,7 @@ A modern, responsive portfolio website built with Flask, featuring a clean and p
 - Responsive design that works on all devices
 - Modern UI with smooth animations and transitions
 - Print-friendly layout for PDF generation
-- Progressive Web App (PWA) capabilities
+- Pogressive Web App (PWA) capabilities
 - Accessibility-compliant design
 - SEO-optimized structure
 
