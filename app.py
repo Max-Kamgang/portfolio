@@ -40,7 +40,7 @@ def download_pdf():
 
     # Updated resume content for PDF
 
-    story.append(Paragraph("Max Kamgang", styles['Title']))
+    story.append(Paragraph("Max Kamgang,Axel Tiako,Honoré Kamga", styles['Title']))
 
     story.append(Paragraph("DevOps Engineer", styles['Heading2']))
 
