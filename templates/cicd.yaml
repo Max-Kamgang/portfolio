@@ -1,0 +1,25 @@
+name: Real World Docker Build and Push 
+
+on:
+ push:
+  branches: [ "main" ]
+ pull_request:
+  branches: [ "main" ]
+env:
+ python_version: '3.11'
+jobs: 
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-python@v4
+              with:
+               python-version: ${{env.python_version}}
+            - name: Unit test 
+              run: pytest
+            - name: Build and Push Docker image
+              run: docker build -t maxkamgang/portcicd .
+             
+
+            
+              

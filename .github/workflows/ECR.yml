@@ -50,7 +50,7 @@ jobs:
       - name: Push Image to ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: site/utc-app
+          ECR_REPOSITORY:  keycedevops
           IMAGE_TAG: ${{ github.run_number }}
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -74,8 +74,8 @@ jobs:
             export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
             export AWS_REGION=${{ secrets.AWS_REGION }}
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 639794896634.dkr.ecr.us-east-1.amazonaws.com
-            docker pull 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }}
+            docker pull 639794896634.dkr.ecr.us-east-1.amazonaws.com/keycedevops:${{ github.run_number }}
             docker rm -f resume
-            docker run -d --name resume -p 8080:5001 639794896634.dkr.ecr.us-east-1.amazonaws.com/site/utc-app:${{ github.run_number }} 
+            docker run -d --name resume -p 8080:5001 639794896634.dkr.ecr.us-east-1.amazonaws.com/keycedevops:${{ github.run_number }} 
             
             
