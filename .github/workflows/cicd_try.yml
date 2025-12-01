@@ -39,7 +39,7 @@ jobs:
       - name: Push Image to Docker Hub
         run: |
             docker push ${{secrets.USERNAME}}/porttries:${{github.run_number}}
-            docker push -t ${{secrets.USERNAME}}/porttries 
+            docker push ${{secrets.USERNAME}}/porttries 
          
       
      
