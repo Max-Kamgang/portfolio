@@ -35,11 +35,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Login To Docker Hub
-        run: docker login -u ${{secrets.USERNAME}} -p ${{secrets.PASSWORD}}
-      - name: Push Image to Docker Hub
         run: |
-            docker push ${{secrets.USERNAME}}/porttries:${{github.run_number}}
-            docker push ${{secrets.USERNAME}}/porttries 
-         
+          docker login -u ${{secrets.USERNAME}} -p ${{secrets.PASSWORD}}
+
+      
+          docker push ${{secrets.USERNAME}}/porttries:${{github.run_number}}
+          docker push ${{secrets.USERNAME}}/porttries
       
      
