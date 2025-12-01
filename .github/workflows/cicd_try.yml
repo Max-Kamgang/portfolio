@@ -1,0 +1,46 @@
+name: Pipeline for Practice of Deploy A Website using Docker 
+on:
+ push:
+  branches: 
+    - main 
+ pull_request:
+    branches: 
+     - main
+env:
+ python_version: '3.11'
+jobs:
+  Clone_rpository:
+    runs-on: ubuntu-latest
+    steps:
+      - name : checkout Repository
+        uses: actions/checkout@v5
+      - name: Setup For python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{env.python_version}}
+  Unit_Test:
+    needs: Clone_rpository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Unit Test
+        run: pytest
+  build:
+    needs: Unit_Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build image
+        run: |
+          docker build -t ${{secrets.USERNAME}}/porttries:${{github.run_number}} .
+          echo "The Image is Now Built Successfully. Let's Push it to Dcocker Hub"
+  Login_and_Push:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login To Docker Hub
+        run: docker login -u ${{secrets.USERNAME}} -p ${{secrets.PASSWORD}}
+      - name: Push Image to Docker Hub
+        run: |
+            docker push ${{secrets.USERNAME}}/porttries:${{github.run_number}}
+         
+      
+     
