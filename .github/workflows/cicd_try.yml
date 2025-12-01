@@ -15,7 +15,7 @@ jobs:
       - name : checkout Repository
         uses: actions/checkout@v5
       - name: Setup For python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{env.python_version}}
     
@@ -25,10 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Build image
-     
+  
         run: |
           docker build -t ${{secrets.USERNAME}}/porttries:${{github.run_number}} .
-          echo "The Image is Now Built Successfully. Let's Push it to Dcocker Hub"
+          docker build -t ${{secrets.USERNAME}}/porttries .
+          echo "The Image is Now Built Successfully. Let's Push it to Docker Hub"
   Login_and_Push:
     needs: build
     runs-on: ubuntu-latest
@@ -38,6 +39,7 @@ jobs:
       - name: Push Image to Docker Hub
         run: |
             docker push ${{secrets.USERNAME}}/porttries:${{github.run_number}}
+            docker push -t ${{secrets.USERNAME}}/porttries 
          
       
      
