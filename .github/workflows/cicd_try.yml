@@ -19,11 +19,18 @@ jobs:
         with:
           python-version: ${{env.python_version}}
   Unit_Test:
+
     needs: Clone_rpository
     runs-on: ubuntu-latest
     steps:
-      - name: Run Unit Test
-        run: pytest
+     - name: Install dependencies
+       run: |
+         python -m pip install --upgrade pip
+         pip install -r requirements.txt 
+     - name: Run Unit Tests
+       run: pytest
+    
+       
   build:
     needs: Unit_Test
     runs-on: ubuntu-latest
