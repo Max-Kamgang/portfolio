@@ -23,7 +23,9 @@ jobs:
     needs: Clone_rpository
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
       - name: Build image
+     
         run: |
           docker build -t ${{secrets.USERNAME}}/porttries:${{github.run_number}} .
           echo "The Image is Now Built Successfully. Let's Push it to Dcocker Hub"
