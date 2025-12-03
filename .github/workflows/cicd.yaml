@@ -13,7 +13,7 @@ env:
  IMAGE_NAME: portcicd
  AWS_REGION: us-east-1
  ACCOUNT_ID: ${{secrets.ACCOUNT_ID}}
- ECR_REPO: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/portcicd
+ ECR_REPO: ${{secrets.ACCOUNT_ID}}.dkr.ecr.${{secrets.AWS_REGION}}.amazonaws.com/portcicd
 jobs: 
     pre-build:
         runs-on: ubuntu-latest
