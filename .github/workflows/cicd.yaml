@@ -5,8 +5,15 @@ on:
   branches: [ "main" ]
  pull_request:
   branches: [ "main" ]
+permissions:
+  id-token: write
+  contents: read
 env:
  python_version: '3.11'
+ IMAGE_NAME: portcicd
+ AWS_REGION: us-east-1
+ ACCOUNT_ID: ${{secrets.ACCOUNT_ID}}
+ ECR_REPO: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/portcicd
 jobs: 
     build:
         runs-on: ubuntu-latest
@@ -19,8 +26,16 @@ jobs:
               run: pip install -r requirements.txt
             - name: Unit test 
               run: pytest test.py
+            - name: Configure AWS credentials using OIDC
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+               role-to-assume: ${{secrets.AWS_ROLE_ARN}}
+               aws-region: ${{env.AWS_REGION}}
+            - name: Check Credentials
+              run: aws s3 ls
+             
             - name: Build and Push Docker image
-              run: docker build -t maxkamgang/portcicd .
+              run: docker build -t ${{secrets.USERNAME}}/portcicd .
              
 
             
