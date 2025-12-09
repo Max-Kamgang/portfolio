@@ -14,6 +14,8 @@ env:
  AWS_REGION: us-east-1
  ACCOUNT_ID: ${{secrets.ACCOUNT_ID}}
  ECR_REPO: ${{secrets.ACCOUNT_ID}}.dkr.ecr.${{secrets.AWS_REGION}}.amazonaws.com/portcicd
+ IMAGE_TAG: ${{ github.sha }}
+
 jobs: 
     pre-build:
         runs-on: ubuntu-latest
@@ -71,7 +73,7 @@ jobs:
         - name: Configure AWS credentials using OIDC
           uses: aws-actions/configure-aws-credentials@v2
           with:
-            role-to-assume: ${{ secrets.ROLE_ARN }}
+            role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
             aws-region: ${{ env.AWS_REGION }}
         - name: Render Amazon ECS task definition
           id: taskdef
