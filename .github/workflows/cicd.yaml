@@ -48,7 +48,7 @@ jobs:
       
             - name: Tag Docker image
               run: |
-               docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.ECR_REPO }}:${{env.IMAGE_TAG}}
+               docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.ECR_REPO }}:latest
         # docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.ECR_REPO }}:${{github.run_number}}
 
       
@@ -63,8 +63,7 @@ jobs:
       # 7. Push Docker image to ECR
             - name: Push Docker image to Amazon ECR
               run: |
-                docker push ${{ env.ECR_REPO }}:${{github.run_number}}
-
+                docker push ${{ env.ECR_REPO }}:latest
     
     ecs_deploy:
       needs: pre-build
@@ -82,6 +81,5 @@ jobs:
           with:
             task-definition: ${{ steps.task-def.outputs.task-definition }}
             cluster: nginx-fargate-cluster
-
             service: nginx-fargate-service
             wait-for-service-stability: true
